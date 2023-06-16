@@ -1,3 +1,14 @@
+enum EventType {
+	MouseDown = 'mousedown',
+	MouseUp = 'mouseup',
+	MouseLeave = 'mouseleave',
+	TouchStart = 'touchstart',
+	TouchEnd = 'touchend',
+	Wheel = 'wheel',
+}
+
+const ReleaseEvents = [EventType.MouseUp, EventType.MouseLeave, EventType.TouchEnd];
+
 class InputTouchspin {
 	#input: HTMLInputElement
 	#btnUp: HTMLButtonElement
@@ -43,32 +54,41 @@ class InputTouchspin {
 		}
 	}
 
+	#handler = {
+		onSpinUpMouseDown: () => this.#spin(),
+		onSpinDownMouseDown: () => this.#spin(false),
+		onSpinUpTouchStart: (e) => {
+			this.#spin();
+			e.cancelable && e.preventDefault();
+		},
+		onSpinDownTouchStart: (e) => {
+			this.#spin(false);
+			e.cancelable && e.preventDefault();
+		},
+		onSpinButtonReleased: () => this.#clearTimers(),
+		onWheel: (e) => {
+			Math.sign(e.deltaY) < 1 ? this.#step() : this.#step(false)
+			e.preventDefault()
+		},
+	}
+
 	#events() {
 		// click
-		this.#btnUp.addEventListener('mousedown', () => this.#spin())
-		this.#btnDown.addEventListener('mousedown', () => this.#spin(false))
+		this.#btnUp.addEventListener(EventType.MouseDown, this.#handler.onSpinUpMouseDown)
+		this.#btnDown.addEventListener(EventType.MouseDown, this.#handler.onSpinDownMouseDown)
 
 		// touch
-		this.#btnUp.addEventListener('touchstart', (e) => {
-			this.#spin()
-			e.cancelable && e.preventDefault()
-		})
-		this.#btnDown.addEventListener('touchstart', (e) => {
-			this.#spin(false)
-			e.cancelable && e.preventDefault()
-		})
+		this.#btnUp.addEventListener(EventType.TouchStart, this.#handler.onSpinUpTouchStart)
+		this.#btnDown.addEventListener(EventType.TouchStart, this.#handler.onSpinDownTouchStart)
 
 		// stop
-		Array.from(['mouseup', 'mouseleave', 'touchend']).forEach((e) => {
-			this.#btnUp.addEventListener(e, () => this.#clearTimers())
-			this.#btnDown.addEventListener(e, () => this.#clearTimers())
+		Array.from(ReleaseEvents).forEach((e) => {
+			this.#btnUp.addEventListener(e, this.#handler.onSpinButtonReleased)
+			this.#btnDown.addEventListener(e, this.#handler.onSpinButtonReleased)
 		})
 
 		// wheel
-		this.#input.addEventListener('wheel', (e) => {
-			Math.sign(e.deltaY) < 1 ? this.#step() : this.#step(false)
-			e.preventDefault()
-		})
+		this.#input.addEventListener(EventType.Wheel, this.#handler.onWheel)
 	}
 
 	#clearTimers() {
@@ -86,6 +106,25 @@ class InputTouchspin {
 	#spin(up = true) {
 		this.#step(up)
 		this.#timeout = setTimeout(() => (this.#interval = setInterval(() => this.#step(up), 50)), 300)
+	}
+
+	cleanUp() {
+		// click
+		this.#btnUp.removeEventListener(EventType.MouseDown, this.#handler.onSpinUpMouseDown)
+		this.#btnDown.removeEventListener(EventType.MouseDown, this.#handler.onSpinDownMouseDown)
+
+		// touch
+		this.#btnUp.removeEventListener(EventType.TouchStart, this.#handler.onSpinUpTouchStart)
+		this.#btnDown.removeEventListener(EventType.TouchStart, this.#handler.onSpinDownTouchStart)
+
+		// stop
+		Array.from(ReleaseEvents).forEach((e) => {
+			this.#btnUp.removeEventListener(e, this.#handler.onSpinButtonReleased)
+			this.#btnDown.removeEventListener(e, this.#handler.onSpinButtonReleased)
+		})
+
+		// wheel
+		this.#input.removeEventListener(EventType.Wheel, this.#handler.onWheel)
 	}
 }
 
