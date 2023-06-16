@@ -9,7 +9,7 @@ class InputTouchspin {
 	#interval: number
 
 	constructor(target: Element) {
-		this.#input = target.querySelector('[data-touchspin-input]')
+		this.#input = target.querySelector('input[data-touchspin-input], [data-touchspin-input] input')
 		this.#btnUp = target.querySelector('[data-touchspin-up]')
 		this.#btnDown = target.querySelector('[data-touchspin-down]')
 
