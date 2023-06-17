@@ -7,11 +7,27 @@ class InputTouchspin {
   #input;
   #btnUp;
   #btnDown;
+  #inputSelectors = [
+    `input[data-touchspin-input]`,
+    `[data-touchspin-input] input`
+  ];
   #styleId = "input-touchspin-style";
+  #styleContent = `
+	${[
+    ...this.#inputSelectors.map((selector) => `${selector}::-webkit-inner-spin-button`),
+    ...this.#inputSelectors.map((selector) => `${selector}::-webkit-outer-spin-button`)
+  ].join()} {
+		margin:0;
+		-webkit-appearance:none;
+	}
+	${this.#inputSelectors.join()} {
+		-moz-appearance:textfield;
+	}
+	`;
   #timeout;
   #interval;
   constructor(target) {
-    this.#input = target.querySelector("input[data-touchspin-input], [data-touchspin-input] input");
+    this.#input = target.querySelector(this.#inputSelectors.join());
     this.#btnUp = target.querySelector("[data-touchspin-up]");
     this.#btnDown = target.querySelector("[data-touchspin-down]");
     this.#style();
@@ -23,7 +39,7 @@ class InputTouchspin {
     if (document.getElementById(this.#styleId) === null) {
       const style = document.createElement("style");
       style.id = this.#styleId;
-      style.textContent = "[data-touchspin-input]::-webkit-inner-spin-button,[data-touchspin-input]::-webkit-outer-spin-button{margin:0;-webkit-appearance:none}[data-touchspin-input]{-moz-appearance:textfield}";
+      style.textContent = this.#styleContent;
       document.head.appendChild(style);
     }
   }
