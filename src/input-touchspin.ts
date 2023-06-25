@@ -39,8 +39,9 @@ class InputTouchspin {
 		this.#btnDown = target.querySelector('[data-touchspin-down]')
 
 		this.#style()
-
-		if (!this.#input.readOnly && !this.#input.disabled) {
+		
+		if (this.#input && !this.#input.readOnly && !this.#input.disabled) {
+			this.cleanUp();
 			this.#events()
 		}
 	}
