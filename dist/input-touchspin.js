@@ -1,6 +1,6 @@
 /*!
 * @erwinstone/input-touchspin v1.0.3 (https://input-touchspin.vercel.app/)
-* Copyright 2021 erwinstone
+* Copyright 2023 erwinstone
 * Licensed under MIT (https://github.com/erwinstone/input-touchspin/blob/master/LICENSE)
 */
 (function (global, factory) {
@@ -9,6 +9,7 @@
 	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.InputTouchspin = factory());
 })(this, (function () { 'use strict';
 
+	const ReleaseEvents = ["mouseup" /* MouseUp */, "mouseleave" /* MouseLeave */, "touchend" /* TouchEnd */];
 	class InputTouchspin {
 	  #input;
 	  #btnUp;
@@ -37,7 +38,8 @@
 	    this.#btnUp = target.querySelector("[data-touchspin-up]");
 	    this.#btnDown = target.querySelector("[data-touchspin-down]");
 	    this.#style();
-	    if (!this.#input.readOnly && !this.#input.disabled) {
+	    if (this.#input && !this.#input.readOnly && !this.#input.disabled) {
+	      this.cleanUp();
 	      this.#events();
 	    }
 	  }
@@ -49,25 +51,33 @@
 	      document.head.appendChild(style);
 	    }
 	  }
-	  #events() {
-	    this.#btnUp.addEventListener("mousedown", () => this.#spin());
-	    this.#btnDown.addEventListener("mousedown", () => this.#spin(false));
-	    this.#btnUp.addEventListener("touchstart", (e) => {
+	  #handler = {
+	    onSpinUpMouseDown: () => this.#spin(),
+	    onSpinDownMouseDown: () => this.#spin(false),
+	    onSpinUpTouchStart: (e) => {
 	      this.#spin();
 	      e.cancelable && e.preventDefault();
-	    });
-	    this.#btnDown.addEventListener("touchstart", (e) => {
+	    },
+	    onSpinDownTouchStart: (e) => {
 	      this.#spin(false);
 	      e.cancelable && e.preventDefault();
-	    });
-	    Array.from(["mouseup", "mouseleave", "touchend"]).forEach((e) => {
-	      this.#btnUp.addEventListener(e, () => this.#clearTimers());
-	      this.#btnDown.addEventListener(e, () => this.#clearTimers());
-	    });
-	    this.#input.addEventListener("wheel", (e) => {
+	    },
+	    onSpinButtonReleased: () => this.#clearTimers(),
+	    onWheel: (e) => {
 	      Math.sign(e.deltaY) < 1 ? this.#step() : this.#step(false);
 	      e.preventDefault();
+	    }
+	  };
+	  #events() {
+	    this.#btnUp.addEventListener("mousedown" /* MouseDown */, this.#handler.onSpinUpMouseDown);
+	    this.#btnDown.addEventListener("mousedown" /* MouseDown */, this.#handler.onSpinDownMouseDown);
+	    this.#btnUp.addEventListener("touchstart" /* TouchStart */, this.#handler.onSpinUpTouchStart);
+	    this.#btnDown.addEventListener("touchstart" /* TouchStart */, this.#handler.onSpinDownTouchStart);
+	    Array.from(ReleaseEvents).forEach((e) => {
+	      this.#btnUp.addEventListener(e, this.#handler.onSpinButtonReleased);
+	      this.#btnDown.addEventListener(e, this.#handler.onSpinButtonReleased);
 	    });
+	    this.#input.addEventListener("wheel" /* Wheel */, this.#handler.onWheel);
 	  }
 	  #clearTimers() {
 	    clearTimeout(this.#timeout);
@@ -82,6 +92,17 @@
 	  #spin(up = true) {
 	    this.#step(up);
 	    this.#timeout = setTimeout(() => this.#interval = setInterval(() => this.#step(up), 50), 300);
+	  }
+	  cleanUp() {
+	    this.#btnUp.removeEventListener("mousedown" /* MouseDown */, this.#handler.onSpinUpMouseDown);
+	    this.#btnDown.removeEventListener("mousedown" /* MouseDown */, this.#handler.onSpinDownMouseDown);
+	    this.#btnUp.removeEventListener("touchstart" /* TouchStart */, this.#handler.onSpinUpTouchStart);
+	    this.#btnDown.removeEventListener("touchstart" /* TouchStart */, this.#handler.onSpinDownTouchStart);
+	    Array.from(ReleaseEvents).forEach((e) => {
+	      this.#btnUp.removeEventListener(e, this.#handler.onSpinButtonReleased);
+	      this.#btnDown.removeEventListener(e, this.#handler.onSpinButtonReleased);
+	    });
+	    this.#input.removeEventListener("wheel" /* Wheel */, this.#handler.onWheel);
 	  }
 	}
 
